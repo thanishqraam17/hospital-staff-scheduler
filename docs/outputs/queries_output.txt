@@ -1,0 +1,152 @@
+=== INSERT: new leave request ===
+ leave_id | staff_id | start_date |  end_date  | status  
+----------+----------+------------+------------+---------
+       11 |        4 | 2026-11-03 | 2026-11-04 | Pending
+(1 row)
+
+INSERT 0 1
+=== UPDATE: approve a pending leave ===
+ leave_id | staff_id | status 
+----------+----------+--------
+(0 rows)
+
+UPDATE 0
+=== DELETE: remove rejected leave requests ===
+ leave_id | staff_id | reason 
+----------+----------+--------
+(0 rows)
+
+DELETE 0
+=== SELECT: today's roster ===
+ department | shift_type |    full_name    | role_title 
+------------+------------+-----------------+------------
+ Cardiology | Morning    | Manoj Patil     | Nurse
+ Cardiology | Evening    | Ishita Banerjee | Nurse
+ Cardiology | Night      | Suresh Kumar    | Doctor
+ Emergency  | Morning    | Sneha Kulkarni  | Nurse
+ Emergency  | Evening    | Rahul Menon     | Nurse
+ Emergency  | Night      | Ananya Iyer     | Doctor
+ ICU        | Morning    | Rohan Gupta     | Nurse
+ ICU        | Evening    | Divya Shetty    | Nurse
+ ICU        | Night      | Karthik Rao     | Doctor
+ Pediatrics | Morning    | Kavya Srinivas  | Nurse
+ Pediatrics | Evening    | Aditya Bhat     | Nurse
+ Pediatrics | Night      | Lakshmi Pillai  | Doctor
+(12 rows)
+
+=== Hours worked per staff in the last 7 days (shift + overtime) ===
+ staff_id |    full_name    | department | shifts |     total_hours     
+----------+-----------------+------------+--------+---------------------
+        1 | Ananya Iyer     | Emergency  |      6 | 66.0000000000000000
+        6 | Karthik Rao     | ICU        |      5 | 55.0000000000000000
+       16 | Suresh Kumar    | Cardiology |      5 | 55.0000000000000000
+       11 | Lakshmi Pillai  | Pediatrics |      5 | 55.0000000000000000
+        2 | Rahul Menon     | Emergency  |      5 | 41.5000000000000000
+       17 | Ishita Banerjee | Cardiology |      5 | 41.5000000000000000
+       12 | Aditya Bhat     | Pediatrics |      5 | 41.5000000000000000
+        7 | Divya Shetty    | ICU        |      5 | 41.5000000000000000
+        8 | Rohan Gupta     | ICU        |      4 | 32.0000000000000000
+        3 | Sneha Kulkarni  | Emergency  |      4 | 32.0000000000000000
+        5 | Meera Nair      | Emergency  |      4 | 32.0000000000000000
+       10 | Vikram Joshi    | ICU        |      4 | 32.0000000000000000
+       13 | Kavya Srinivas  | Pediatrics |      4 | 32.0000000000000000
+       20 | Harish Gowda    | Cardiology |      4 | 32.0000000000000000
+       18 | Manoj Patil     | Cardiology |      4 | 32.0000000000000000
+       15 | Pooja Verma     | Pediatrics |      4 | 32.0000000000000000
+       14 | Nikhil Das      | Pediatrics |      3 | 24.0000000000000000
+        4 | Arjun Reddy     | Emergency  |      3 | 24.0000000000000000
+        9 | Priya Hegde     | ICU        |      3 | 24.0000000000000000
+       19 | Riya Desai      | Cardiology |      3 | 24.0000000000000000
+(20 rows)
+
+=== Staff with more than 5 night shifts in 28 days (HAVING) ===
+   full_name    | night_shifts 
+----------------+--------------
+ Karthik Rao    |            6
+ Lakshmi Pillai |            6
+ Meera Nair     |            6
+ Riya Desai     |            6
+ Priya Hegde    |            6
+ Arjun Reddy    |            6
+ Harish Gowda   |            6
+ Pooja Verma    |            6
+ Suresh Kumar   |            6
+ Nikhil Das     |            6
+ Ananya Iyer    |            6
+ Vikram Joshi   |            6
+(12 rows)
+
+=== Overtime summary per department ===
+ department | staff_with_overtime | total_overtime | avg_overtime_entry | max_single_entry 
+------------+---------------------+----------------+--------------------+------------------
+ Emergency  |                   2 |           43.5 |               2.56 |              3.0
+ Cardiology |                   2 |           34.5 |               2.46 |              3.0
+ ICU        |                   2 |           34.5 |               2.46 |              3.0
+ Pediatrics |                   2 |           34.5 |               2.46 |              3.0
+(4 rows)
+
+=== Departments where average mood is below 3 ===
+ department | avg_mood | notes 
+------------+----------+-------
+ Emergency  |     2.25 |     4
+ ICU        |     2.67 |     3
+ Cardiology |     2.75 |     4
+(3 rows)
+
+=== Nested: staff with a pending leave request ===
+ staff_id |    full_name    | role_title 
+----------+-----------------+------------
+        4 | Arjun Reddy     | Technician
+        8 | Rohan Gupta     | Nurse
+       17 | Ishita Banerjee | Nurse
+(3 rows)
+
+=== Correlated: staff whose overtime exceeds their department average ===
+ staff_id |    full_name    | department_id | my_overtime 
+----------+-----------------+---------------+-------------
+        1 | Ananya Iyer     |             1 |        36.0
+        6 | Karthik Rao     |             2 |        27.0
+       11 | Lakshmi Pillai  |             3 |        27.0
+       16 | Suresh Kumar    |             4 |        27.0
+       12 | Aditya Bhat     |             3 |         7.5
+       17 | Ishita Banerjee |             4 |         7.5
+        7 | Divya Shetty    |             2 |         7.5
+(7 rows)
+
+=== Correlated EXISTS: staff with no check-in note in the last 7 days ===
+ staff_id |   full_name    
+----------+----------------
+        4 | Arjun Reddy
+        5 | Meera Nair
+        9 | Priya Hegde
+       10 | Vikram Joshi
+       13 | Kavya Srinivas
+       14 | Nikhil Das
+       19 | Riya Desai
+(7 rows)
+
+=== Recursive CTE: longest run of consecutive working days per staff ===
+    full_name    | max_consecutive_days 
+-----------------+----------------------
+ Ananya Iyer     |                    4
+ Aditya Bhat     |                    3
+ Arjun Reddy     |                    3
+ Divya Shetty    |                    3
+ Harish Gowda    |                    3
+ Ishita Banerjee |                    3
+ Karthik Rao     |                    3
+ Kavya Srinivas  |                    3
+ Lakshmi Pillai  |                    3
+ Manoj Patil     |                    3
+ Meera Nair      |                    3
+ Nikhil Das      |                    3
+ Pooja Verma     |                    3
+ Priya Hegde     |                    3
+ Rahul Menon     |                    3
+ Riya Desai      |                    3
+ Rohan Gupta     |                    3
+ Sneha Kulkarni  |                    3
+ Suresh Kumar    |                    3
+ Vikram Joshi    |                    3
+(20 rows)
+

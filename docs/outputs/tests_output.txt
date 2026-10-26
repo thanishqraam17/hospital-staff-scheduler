@@ -1,0 +1,124 @@
+
+=== TEST 1 (should fail): double booking - same staff in two overlapping shifts ===
+BEGIN
+psql:/tests.sql:19: ERROR:  Double booking: staff 3 already has an overlapping shift
+CONTEXT:  PL/pgSQL function trg_validate_assignment() line 29 at RAISE
+ROLLBACK
+
+=== TEST 2 (should fail): rest rule - Night yesterday, Evening today (8 h gap) ===
+BEGIN
+psql:/tests.sql:33: ERROR:  Rest rule violated: staff 5 would have less than 11 hours between shifts
+CONTEXT:  PL/pgSQL function trg_validate_assignment() line 40 at RAISE
+ROLLBACK
+
+=== TEST 3 (should fail): assigning a shift during approved leave ===
+BEGIN
+INSERT 0 1
+INSERT 0 1
+psql:/tests.sql:46: ERROR:  Staff 3 is on approved leave on 2026-12-05
+CONTEXT:  PL/pgSQL function trg_validate_assignment() line 18 at RAISE
+ROLLBACK
+
+=== TEST 4 (should fail): weekly hour cap ===
+BEGIN
+UPDATE 1
+INSERT 0 2
+INSERT 0 1
+(first 8-hour shift accepted, second one should be rejected)
+psql:/tests.sql:62: ERROR:  Weekly cap exceeded: staff 4 would work more than 8 hours in 7 days
+CONTEXT:  PL/pgSQL function trg_validate_assignment() line 56 at RAISE
+ROLLBACK
+
+=== TEST 5 (should fail): CHECK constraints ===
+psql:/tests.sql:67: ERROR:  new row for relation "checkin_note" violates check constraint "checkin_note_mood_rating_check"
+DETAIL:  Failing row contains (18, 1, Test, 7, 2026-10-26 03:13:20.588341, null).
+psql:/tests.sql:68: ERROR:  new row for relation "leave_request" violates check constraint "leave_request_check"
+DETAIL:  Failing row contains (13, 1, 2026-10-26, 2026-10-23, null, Pending).
+psql:/tests.sql:70: ERROR:  new row for relation "staff" violates check constraint "staff_role_title_check"
+DETAIL:  Failing row contains (23, Test User, Surgeon, x@hospital.in, 2026-10-26, 48, 1).
+
+=== TEST 6 (should fail): foreign key - staff in a non-existent department ===
+psql:/tests.sql:75: ERROR:  insert or update on table "staff" violates foreign key constraint "staff_department_id_fkey"
+DETAIL:  Key (department_id)=(99) is not present in table "department".
+
+=== TEST 7 (should pass): leave approval auto-cancels shifts in that period ===
+BEGIN
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+Before approval:
+ assignment_id | staff_id |  status  
+---------------+----------+----------
+           355 |        9 | Assigned
+(1 row)
+
+UPDATE 1
+After approval:
+ assignment_id | staff_id |  status   
+---------------+----------+-----------
+           355 |        9 | Cancelled
+(1 row)
+
+ROLLBACK
+
+=== TEST 8 (should pass): overtime trigger recalculates burnout score ===
+BEGIN
+Before:
+ staff_id | week_start | overtime_hours | score | risk_level 
+----------+------------+----------------+-------+------------
+        2 | 2026-10-26 |            0.0 |     0 | Low
+(1 row)
+
+INSERT 0 1
+After logging 8 hours overtime:
+ staff_id | week_start | overtime_hours | score | risk_level 
+----------+------------+----------------+-------+------------
+        2 | 2026-10-26 |            8.0 |    12 | Low
+(1 row)
+
+ROLLBACK
+
+=== TEST 9 (should pass): swap_shift procedure swaps two staff atomically ===
+BEGIN
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+Before swap:
+ shift_date | staff_id |  status  
+------------+----------+----------
+ 2027-01-04 |        4 | Assigned
+ 2027-01-09 |        5 | Assigned
+(2 rows)
+
+DO
+After swap:
+ shift_date | staff_id | status  
+------------+----------+---------
+ 2027-01-04 |        5 | Swapped
+ 2027-01-09 |        4 | Swapped
+(2 rows)
+
+ROLLBACK
+
+=== TEST 10 (should fail): swap with a missing assignment ===
+psql:/tests.sql:147: ERROR:  Assignment 999999 not found or cancelled
+CONTEXT:  PL/pgSQL function swap_shift(integer,integer) line 15 at RAISE
+
+=== TEST 11 (transaction rollback): an error undoes earlier changes ===
+Leave status before:
+ leave_id | staff_id | status  
+----------+----------+---------
+        2 |        8 | Pending
+(1 row)
+
+BEGIN
+UPDATE 1
+psql:/tests.sql:155: ERROR:  new row for relation "checkin_note" violates check constraint "checkin_note_mood_rating_check"
+DETAIL:  Failing row contains (19, 8, Bad mood value, 9, 2026-10-26 03:13:20.608977, null).
+ROLLBACK
+Leave status after (should be unchanged):
+ leave_id | staff_id | status  
+----------+----------+---------
+        2 |        8 | Pending
+(1 row)
+

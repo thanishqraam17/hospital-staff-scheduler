@@ -1,0 +1,37 @@
+CREATE FUNCTION
+CREATE PROCEDURE
+CREATE PROCEDURE
+CREATE PROCEDURE
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+CREATE VIEW
+UPDATE 3
+DO
+=== Risk level counts per week ===
+ week_start | risk_level | staff 
+------------+------------+-------
+ 2026-09-28 | Low        |     4
+ 2026-10-05 | Low        |    19
+ 2026-10-05 | Medium     |     1
+ 2026-10-12 | High       |     1
+ 2026-10-12 | Low        |    19
+ 2026-10-19 | High       |     1
+ 2026-10-19 | Low        |    16
+ 2026-10-19 | Medium     |     3
+ 2026-10-26 | Low        |    20
+(9 rows)
+
+=== VIEW high_risk_staff ===
+  full_name  | department | week_start | total_hours | overtime_hours | score 
+-------------+------------+------------+-------------+----------------+-------
+ Ananya Iyer | Emergency  | 2026-10-19 |        48.0 |           18.0 |    84
+ Ananya Iyer | Emergency  | 2026-10-12 |        40.0 |           15.0 |    68
+(2 rows)
+
