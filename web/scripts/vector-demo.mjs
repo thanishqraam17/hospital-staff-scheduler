@@ -1,12 +1,16 @@
 // Demonstrates the vector feature: Read (similarity search), Update, Delete.
 // Run from the web folder:  node --env-file=.env.local scripts/vector-demo.mjs
-import { pool } from '../lib/db.mjs';
+import { pool, withRole } from '../lib/db.mjs';
 import { embed, toSql } from '../lib/embed.mjs';
+
+// all queries run as the app_admin database role
+const admin = { role: 'Admin', staffId: null };
+const q = (sql, params) => withRole(admin, (db) => db.query(sql, params));
 
 // READ: top-k notes closest in meaning to a query (cosine distance <=>)
 async function search(query, k = 5, department = null) {
   const vector = toSql(await embed(query));
-  const { rows } = await pool.query(
+  const { rows } = await q(
     `SELECT c.note_id, s.full_name, d.name AS department, c.mood_rating,
             ROUND((1 - (c.embedding <=> $1::vector))::numeric, 3) AS similarity,
             c.note_text
@@ -39,7 +43,7 @@ show('READ with filter: same query, ICU department only',
 
 // 3. Insert a demo note (with its embedding) to work on
 const newText = 'The team was great today and I left on time.';
-const { rows: inserted } = await pool.query(
+const { rows: inserted } = await q(
   `INSERT INTO checkin_note (staff_id, note_text, mood_rating, embedding)
    VALUES (3, $1, 4, $2::vector) RETURNING note_id`,
   [newText, toSql(await embed(newText))]
@@ -52,7 +56,7 @@ show('Search "feeling burnt out" BEFORE update',
 
 // 4. UPDATE: change the text and re-embed it so search reflects the new meaning
 const updatedText = 'Completely burnt out, double shifts and no breaks all week.';
-await pool.query(
+await q(
   `UPDATE checkin_note SET note_text = $1, mood_rating = 1, embedding = $2::vector
    WHERE note_id = $3`,
   [updatedText, toSql(await embed(updatedText)), demoId]
@@ -63,8 +67,8 @@ show('Search "feeling burnt out" AFTER update (similarity should rise)',
   (await search('feeling burnt out', 20)).filter((r) => r.note_id === demoId));
 
 // 5. DELETE: remove the note and its vector
-await pool.query('DELETE FROM checkin_note WHERE note_id = $1', [demoId]);
-const { rows: gone } = await pool.query(
+await q('DELETE FROM checkin_note WHERE note_id = $1', [demoId]);
+const { rows: gone } = await q(
   'SELECT COUNT(*) AS remaining FROM checkin_note WHERE note_id = $1', [demoId]);
 console.log(`\nDELETE: note ${demoId} removed, rows remaining with that id: ${gone[0].remaining}`);
 
